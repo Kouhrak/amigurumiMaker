@@ -1,0 +1,33 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Tech stack: Android, Kotlin 2.2.10, AGP 9.2.1, Jetpack Compose (BOM 2026.02.01), Material3
+  Architecture: None yet — scaffold project with MainActivity + theme (Color, Theme, Type)
+  Testing: JUnit 4 (unit), AndroidX Test + Espresso + Compose UI Test (instrumented)
+  Style: Kotlin (official code style), no linter/formatter configured
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    - Follow existing code patterns
+    - Follow android-mvi-clean-architecture skill rules (MVI + Clean Architecture + Atomic Design)
+    - Apply dependency gate before adding third-party libraries
+    tdd: true
+    test_command: "./gradlew test"
+  verify:
+    test_command: "./gradlew test"
+    build_command: "./gradlew assembleDebug"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
