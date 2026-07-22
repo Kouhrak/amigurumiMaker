@@ -1,5 +1,6 @@
 package com.example.amigurumimaker.presentation.wallmodeler.ui.atoms
 
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -22,12 +23,14 @@ fun SyntaxInputField(
     OutlinedTextField(
         value = text,
         onValueChange = onTextChange,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .fillMaxHeight(),
         label = { Text(label) },
         placeholder = { Text(placeholder) },
         shape = RoundedCornerShape(8.dp),
         minLines = 4,
-        maxLines = 8,
+        maxLines = Int.MAX_VALUE,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii)
     )
 }

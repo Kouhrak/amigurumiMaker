@@ -39,13 +39,6 @@ fun PatternEditorPanel(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(Modifier.height(4.dp))
-
-        Text(
-            text = "Formatos: 1) 8c (7p)  |  2) [1p 1a] 6v (18p)  |  3) 3p 1a 3p 1c (8p)",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
 
         Spacer(Modifier.height(8.dp))
 
@@ -53,20 +46,6 @@ fun PatternEditorPanel(
             text = text,
             onTextChange = onTextChange
         )
-
-        Spacer(Modifier.height(8.dp))
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { onExampleClick(1) },
-                modifier = Modifier.weight(1f)
-            ) { Text("Ejemplo 1", style = MaterialTheme.typography.bodySmall) }
-            Spacer(Modifier.width(8.dp))
-            OutlinedButton(
-                onClick = { onExampleClick(2) },
-                modifier = Modifier.weight(1f)
-            ) { Text("Ejemplo 2", style = MaterialTheme.typography.bodySmall) }
-        }
 
         Spacer(Modifier.height(8.dp))
 

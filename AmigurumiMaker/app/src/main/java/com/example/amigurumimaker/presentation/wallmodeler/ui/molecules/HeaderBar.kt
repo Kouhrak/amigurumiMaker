@@ -34,23 +34,6 @@ fun HeaderBar(
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .background(
-                    Brush.linearGradient(listOf(Color(0xFF6366F1), Color(0xFFA855F7))),
-                    RoundedCornerShape(8.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "◆",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = MaterialTheme.typography.titleMedium.fontSize
-            )
-        }
-
         Spacer(Modifier.width(10.dp))
 
         Column {

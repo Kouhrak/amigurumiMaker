@@ -85,12 +85,9 @@ fun WallModelerTemplate(
                     enabled = buildEnabled,
                     logMessage = logMessage
                 )
-
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                StitchInfoPanel(
-                    activeTab = activeTab,
-                    onTabChange = onTabChange
+                AnalysisTable(
+                    rows = parsedRows,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -129,11 +126,6 @@ fun WallModelerTemplate(
                     totalIncreases = totalIncreases,
                     totalDecreases = totalDecreases,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-
-                AnalysisTable(
-                    rows = parsedRows,
-                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
