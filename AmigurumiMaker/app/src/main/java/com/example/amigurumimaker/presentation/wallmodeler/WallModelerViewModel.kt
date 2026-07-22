@@ -2,10 +2,10 @@ package com.example.amigurumimaker.presentation.wallmodeler
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.amigurumimaker.domain.GeometryComputer
-import com.example.amigurumimaker.domain.RowExpander
-import com.example.amigurumimaker.domain.WallTokenizer
-import com.example.amigurumimaker.domain.model.ParseResult
+import com.example.amigurumimaker.domain.MeshComputer
+import com.example.amigurumimaker.domain.PatternParser
+import com.example.amigurumimaker.domain.model.InfoTab
+import com.example.amigurumimaker.domain.model.ViewMode
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -26,36 +26,87 @@ class WallModelerViewModel : ViewModel() {
         when (intent) {
             is WallModelerIntent.ParseSyntax -> parseSyntax(intent.text)
             is WallModelerIntent.Reset -> reset()
+            is WallModelerIntent.ZoomBy -> zoom(intent.factor)
+            is WallModelerIntent.ResetView -> resetView()
+            is WallModelerIntent.SetViewMode -> setViewMode(intent.mode)
+            is WallModelerIntent.SetActiveTab -> setActiveTab(intent.tab)
+            is WallModelerIntent.LoadExample -> loadExample(intent.index)
+            is WallModelerIntent.DragBy -> dragBy(intent.dx, intent.dy)
         }
     }
 
     private fun parseSyntax(text: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            when (val result = WallTokenizer.tokenize(text)) {
-                is ParseResult.Success -> {
-                    val expanded = result.rows.flatMap { RowExpander.expand(it) }
-                    val geometries = GeometryComputer.compute(expanded)
-                    val blockCount = geometries.count { it.vertices.isNotEmpty() }
-                    _state.update {
-                        it.copy(
-                            syntaxText = text,
-                            rows = expanded,
-                            geometries = geometries,
-                            isLoading = false,
-                            error = null,
-                            parsedBlockCount = blockCount
-                        )
-                    }
-                    _effect.emit(WallModelerEffect.CenterCamera)
+            val parsedRows = PatternParser.parse(text)
+            if (parsedRows.isEmpty()) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "No se encontraron filas válidas.",
+                        logMessage = "Error: Sintaxis no válida."
+                    )
                 }
-                is ParseResult.Error -> {
-                    _state.update {
-                        it.copy(isLoading = false, error = result.message)
-                    }
-                    _effect.emit(WallModelerEffect.ShowError(result.message))
-                }
+                _effect.emit(WallModelerEffect.ShowError("No se encontraron filas válidas."))
+                return@launch
             }
+
+            val meshCells = MeshComputer.compute2DCells(parsedRows)
+            val cylinderCells = MeshComputer.compute3DProjection(parsedRows)
+            val totalStitches = parsedRows.sumOf { it.totalCalculated }
+            val totalIncreases = parsedRows.sumOf { it.increaseCount }
+            val totalDecreases = parsedRows.sumOf { it.decreaseCount }
+
+            _state.update {
+                it.copy(
+                    syntaxText = text,
+                    parsedRows = parsedRows,
+                    meshCells = meshCells,
+                    cylinderCells = cylinderCells,
+                    isLoading = false,
+                    error = null,
+                    totalStitches = totalStitches,
+                    totalIncreases = totalIncreases,
+                    totalDecreases = totalDecreases,
+                    logMessage = "Procesadas exitosamente ${parsedRows.size} filas. Total de células recalculadas."
+                )
+            }
+        }
+    }
+
+    private fun zoom(factor: Float) {
+        _state.update {
+            val newScale = (it.scale * factor).coerceIn(0.3f, 4f)
+            it.copy(scale = newScale)
+        }
+    }
+
+    private fun resetView() {
+        _state.update { it.copy(scale = 1f, offsetX = 0f, offsetY = 0f) }
+    }
+
+    private fun setViewMode(mode: ViewMode) {
+        _state.update { it.copy(viewMode = mode) }
+    }
+
+    private fun setActiveTab(tab: InfoTab) {
+        _state.update { it.copy(activeTab = tab) }
+    }
+
+    private fun dragBy(dx: Float, dy: Float) {
+        _state.update {
+            it.copy(offsetX = it.offsetX + dx, offsetY = it.offsetY + dy)
+        }
+    }
+
+    private fun loadExample(index: Int) {
+        val text = when (index) {
+            1 -> "1) 8c (7p)\n2) 3p 1a 3p 1c (8p)\n3) 8p 1c (8p)\n4) 8p 1c (8p)"
+            2 -> "1) [1a] 6v (12p)\n2) [1p 1a] 6v (18p)\n3) [2p 1a] 6v (24p)\n4) [2p 1d] 6v (18p)\n5) [1p 1d] 6v (12p)"
+            else -> ""
+        }
+        if (text.isNotEmpty()) {
+            parseSyntax(text)
         }
     }
 

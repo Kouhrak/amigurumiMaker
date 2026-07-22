@@ -27,7 +27,7 @@ fun WallModelerPage(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var localText by remember { mutableStateOf("1) 1c (1p)") }
+    var localText by remember { mutableStateOf("1) 8c (7p)\n2) 3p 1a 3p 1c (8p)\n3) 8p 1c (8p)\n4) 8p 1c (8p)") }
 
     LaunchedEffect(Unit) {
         viewModel.process(WallModelerIntent.ParseSyntax(localText))
@@ -39,9 +39,7 @@ fun WallModelerPage(
                 is WallModelerEffect.ShowError -> {
                     snackbarHostState.showSnackbar(effect.message)
                 }
-                is WallModelerEffect.CenterCamera -> {
-                    // Camera auto-center handled by GeometryViewport based on geometries
-                }
+                is WallModelerEffect.CenterCamera -> {}
             }
         }
     }
@@ -50,11 +48,30 @@ fun WallModelerPage(
         WallModelerTemplate(
             syntaxText = localText,
             onTextChange = { localText = it },
-            onBuildClick = {
+            onParseClick = {
                 viewModel.process(WallModelerIntent.ParseSyntax(localText))
             },
-            geometries = state.geometries,
+            onExampleClick = { index ->
+                viewModel.process(WallModelerIntent.LoadExample(index))
+            },
+            parsedRows = state.parsedRows,
+            meshCells = state.meshCells,
+            cylinderCells = state.cylinderCells,
             buildEnabled = !state.isLoading,
+            viewMode = state.viewMode,
+            activeTab = state.activeTab,
+            onViewModeChange = { viewModel.process(WallModelerIntent.SetViewMode(it)) },
+            onTabChange = { viewModel.process(WallModelerIntent.SetActiveTab(it)) },
+            scale = state.scale,
+            offsetX = state.offsetX,
+            offsetY = state.offsetY,
+            onDrag = { dx, dy -> viewModel.process(WallModelerIntent.DragBy(dx, dy)) },
+            onZoom = { factor -> viewModel.process(WallModelerIntent.ZoomBy(factor)) },
+            onResetView = { viewModel.process(WallModelerIntent.ResetView) },
+            logMessage = state.logMessage,
+            totalStitches = state.totalStitches,
+            totalIncreases = state.totalIncreases,
+            totalDecreases = state.totalDecreases,
             modifier = Modifier.fillMaxSize()
         )
         SnackbarHost(

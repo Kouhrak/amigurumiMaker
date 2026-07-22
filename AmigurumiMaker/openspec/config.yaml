@@ -2,10 +2,43 @@
 schema: spec-driven
 
 context: |
-  Tech stack: Android, Kotlin 2.2.10, AGP 9.2.1, Jetpack Compose (BOM 2026.02.01), Material3
-  Architecture: None yet — scaffold project with MainActivity + theme (Color, Theme, Type)
-  Testing: JUnit 4 (unit), AndroidX Test + Espresso + Compose UI Test (instrumented)
-  Style: Kotlin (official code style), no linter/formatter configured
+  Tech stack: Android, Kotlin 2.4.0, AGP 9.2.1, Gradle 9.4.1
+  UI: Jetpack Compose (BOM 2026.02.01), Material3, SceneView 4.23.0
+  Architecture: MVI + Clean Architecture + Atomic Design (presentation/domain/data layers)
+  Package: com.example.amigurumimaker
+  Testing: JUnit 4.13.2 (unit), Compose UI Test + Espresso 3.5.1 (instrumented)
+  Style: Kotlin official code style; no linter/formatter configured
+
+testing:
+  strict_tdd: true
+  runner:
+    command: "./gradlew test"
+    framework: JUnit 4
+    variant: android-junit4
+  layers:
+    unit:
+      available: true
+      tool: "JUnit 4 + kotlin.test + kotlinx-coroutines-test"
+    integration:
+      available: true
+      tool: "AndroidX Test + Compose UI Test JUnit4 + Espresso Core (on-device)"
+    e2e:
+      available: false
+      tool: "—"
+  coverage:
+    available: false
+    command: "—"
+    note: "No JaCoCo or Kover configured; coverage_threshold set to 0"
+  quality:
+    linter:
+      available: false
+      command: "—"
+    type_checker:
+      available: true
+      command: "kotlinc (implicit via Gradle)"
+    formatter:
+      available: false
+      command: "—"
 
 rules:
   proposal:
