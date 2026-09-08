@@ -29,12 +29,16 @@ import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.amigurumimaker.domain.model.ColorMode
 import com.example.amigurumimaker.domain.model.CylinderCell
 import com.example.amigurumimaker.domain.model.MeshCell
 import com.example.amigurumimaker.domain.model.ParsedRow
+import com.example.amigurumimaker.domain.model.RoundAnalysis
 import com.example.amigurumimaker.domain.model.StitchType
 import com.example.amigurumimaker.domain.model.ViewMode
+import com.example.amigurumimaker.domain.CurvatureComputer
 
 @Composable
 fun CanvasView(
@@ -47,6 +51,9 @@ fun CanvasView(
     offsetY: Float,
     onDrag: (Float, Float) -> Unit,
     onZoom: (Float) -> Unit,
+    roundAnalyses: List<RoundAnalysis> = emptyList(),
+    colorMode: ColorMode = ColorMode.GAUSS_HEATMAP,
+    wireframeEnabled: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -84,12 +91,21 @@ fun CanvasView(
                         draw2DRowLabels(parsedRows)
                         draw2DMesh(meshCells)
                     }
-                    ViewMode.CYLINDER_3D -> draw3DCylinder(cylinderCells)
+                    ViewMode.CYLINDER_3D -> draw3DCylinder(
+                        cells = cylinderCells,
+                        roundAnalyses = roundAnalyses,
+                        colorMode = colorMode,
+                        wireframeEnabled = wireframeEnabled
+                    )
+                    ViewMode.REVOLUTION_3D -> {}
                 }
             }
         }
 
-        LegendOverlay(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
+        LegendOverlay(
+            colorMode = colorMode,
+            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp)
+        )
 
         ViewScaleBadge(
             viewMode = viewMode,
@@ -100,7 +116,10 @@ fun CanvasView(
 }
 
 @Composable
-private fun LegendOverlay(modifier: Modifier = Modifier) {
+private fun LegendOverlay(
+    colorMode: ColorMode,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .background(Color(0xCC0F172A), RoundedCornerShape(8.dp))
@@ -109,14 +128,24 @@ private fun LegendOverlay(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Text(
-            text = "LEYENDA DE GEOMETRÍA",
+            text = if (colorMode == ColorMode.GAUSS_HEATMAP) "LEYENDA DE CURVATURA" else "LEYENDA DE GEOMETRÍA",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF94A3B8)
         )
-        LegendItem(color = Color(0xFF64748B), label = "Punto Base (Cuadrado / Cubo)")
-        LegendItem(color = Color(0xFF10B981), label = "Aumento (Trapecio Divergente)")
-        LegendItem(color = Color(0xFFF43F5E), label = "Disminución (Trapecio Convergencia)")
+
+        when (colorMode) {
+            ColorMode.GAUSS_HEATMAP -> {
+                LegendItem(color = Color(0xFF10B981), label = "K > 0 — Esférica (Aumentos)")
+                LegendItem(color = Color(0xFF06B6D4), label = "K = 0 — Plana/Cilíndrica")
+                LegendItem(color = Color(0xFFEC4899), label = "K < 0 — Hiperbólica (Disminuciones)")
+            }
+            ColorMode.ROW_GRADIENT -> {
+                LegendItem(color = Color(0xFF64748B), label = "Punto Base")
+                LegendItem(color = Color(0xFF10B981), label = "Aumento")
+                LegendItem(color = Color(0xFFF43F5E), label = "Disminución")
+            }
+        }
     }
 }
 
@@ -224,7 +253,14 @@ private fun DrawScope.draw2DRowLabels(rows: List<ParsedRow>) {
     }
 }
 
-private fun DrawScope.draw3DCylinder(cells: List<CylinderCell>) {
+private fun DrawScope.draw3DCylinder(
+    cells: List<CylinderCell>,
+    roundAnalyses: List<RoundAnalysis>,
+    colorMode: ColorMode,
+    wireframeEnabled: Boolean
+) {
+    val curvatureByRow = roundAnalyses.associate { it.rowIndex to it.localCurvature }
+
     cells.forEach { cell ->
         if (cell.depth > 0.3f) return@forEach
 
@@ -238,15 +274,44 @@ private fun DrawScope.draw3DCylinder(cells: List<CylinderCell>) {
 
         val alpha = (1f - cell.depth).coerceIn(0f, 1f)
 
-        val fillColor = when (cell.type) {
-            StitchType.INCREASE -> Color(0.2f, 0.7f, 0.5f, alpha)
-            StitchType.DECREASE -> Color(0.95f, 0.25f, 0.37f, alpha)
-            StitchType.CHAIN -> Color(0.4f, 0.4f, 0.9f, alpha)
-            StitchType.NORMAL -> Color(0.3f, 0.4f, 0.6f, alpha * 0.8f)
+        val fillColor = when (colorMode) {
+            ColorMode.GAUSS_HEATMAP -> {
+                val k = curvatureByRow[cell.rowIndex] ?: 0.0
+                curvatureFillColor(k, alpha)
+            }
+            ColorMode.ROW_GRADIENT -> {
+                when (cell.type) {
+                    StitchType.INCREASE -> Color(0.2f, 0.7f, 0.5f, alpha)
+                    StitchType.DECREASE -> Color(0.95f, 0.25f, 0.37f, alpha)
+                    StitchType.CHAIN -> Color(0.4f, 0.4f, 0.9f, alpha)
+                    StitchType.NORMAL -> Color(0.3f, 0.4f, 0.6f, alpha * 0.8f)
+                }
+            }
         }
-        val strokeColor = Color(0xFF334155)
 
         drawPath(path = path, color = fillColor)
-        drawPath(path = path, color = strokeColor, style = Stroke(width = 1f))
+
+        if (wireframeEnabled) {
+            val strokeColor = Color(0xFF334155)
+            drawPath(path = path, color = strokeColor, style = Stroke(width = 1f))
+        }
     }
+}
+
+private fun curvatureFillColor(k: Double, alpha: Float): Color {
+    return when {
+        k > 1e-8 -> Color(0xFF10B981).copy(alpha = alpha.coerceIn(0.2f, 0.9f))
+        k < -1e-8 -> Color(0xFFEC4899).copy(alpha = alpha.coerceIn(0.2f, 0.9f))
+        else -> Color(0xFF06B6D4).copy(alpha = alpha.coerceIn(0.2f, 0.9f))
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CanvasViewEmptyPreview() {
+    CanvasView(
+        meshCells = emptyList(), cylinderCells = emptyList(), parsedRows = emptyList(),
+        viewMode = ViewMode.MESH_2D, scale = 1f, offsetX = 0f, offsetY = 0f,
+        onDrag = { _, _ -> }, onZoom = {}
+    )
 }

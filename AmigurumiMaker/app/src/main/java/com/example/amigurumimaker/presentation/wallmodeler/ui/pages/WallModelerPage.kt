@@ -72,6 +72,15 @@ fun WallModelerPage(
             totalStitches = state.totalStitches,
             totalIncreases = state.totalIncreases,
             totalDecreases = state.totalDecreases,
+            roundAnalyses = state.roundAnalyses,
+            surfaceMetrics = state.surfaceMetrics,
+            surfaceClassification = state.surfaceClassification,
+            colorMode = state.colorMode,
+            wireframeEnabled = state.wireframeEnabled,
+            revolutionMesh = state.revolutionMesh,
+            onColorModeChange = { viewModel.process(WallModelerIntent.SetColorMode(it)) },
+            onWireframeToggle = { viewModel.process(WallModelerIntent.SetWireframe(it)) },
+            onPresetClick = { index -> viewModel.process(WallModelerIntent.LoadPreset(index)) },
             modifier = Modifier.fillMaxSize()
         )
         SnackbarHost(

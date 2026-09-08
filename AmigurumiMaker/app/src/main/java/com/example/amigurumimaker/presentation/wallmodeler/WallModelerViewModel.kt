@@ -2,8 +2,11 @@ package com.example.amigurumimaker.presentation.wallmodeler
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.amigurumimaker.domain.CurvatureComputer
 import com.example.amigurumimaker.domain.MeshComputer
 import com.example.amigurumimaker.domain.PatternParser
+import com.example.amigurumimaker.domain.PresetPatterns
+import com.example.amigurumimaker.domain.RevolutionMeshComputer
 import com.example.amigurumimaker.domain.model.InfoTab
 import com.example.amigurumimaker.domain.model.ViewMode
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -32,6 +35,9 @@ class WallModelerViewModel : ViewModel() {
             is WallModelerIntent.SetActiveTab -> setActiveTab(intent.tab)
             is WallModelerIntent.LoadExample -> loadExample(intent.index)
             is WallModelerIntent.DragBy -> dragBy(intent.dx, intent.dy)
+            is WallModelerIntent.SetColorMode -> setColorMode(intent.mode)
+            is WallModelerIntent.SetWireframe -> setWireframe(intent.enabled)
+            is WallModelerIntent.LoadPreset -> loadPreset(intent.index)
         }
     }
 
@@ -57,6 +63,14 @@ class WallModelerViewModel : ViewModel() {
             val totalIncreases = parsedRows.sumOf { it.increaseCount }
             val totalDecreases = parsedRows.sumOf { it.decreaseCount }
 
+            val roundAnalyses = CurvatureComputer.computeRoundAnalyses(parsedRows)
+            val surfaceMetrics = CurvatureComputer.computeSurfaceMetrics(roundAnalyses)
+            val surfaceClassification = CurvatureComputer.classifySurface(roundAnalyses)
+            val revolutionMesh = RevolutionMeshComputer.computeMesh(
+                analyses = roundAnalyses,
+                colorMode = _state.value.colorMode
+            )
+
             _state.update {
                 it.copy(
                     syntaxText = text,
@@ -68,7 +82,11 @@ class WallModelerViewModel : ViewModel() {
                     totalStitches = totalStitches,
                     totalIncreases = totalIncreases,
                     totalDecreases = totalDecreases,
-                    logMessage = "Procesadas exitosamente ${parsedRows.size} filas. Total de células recalculadas."
+                    roundAnalyses = roundAnalyses,
+                    surfaceMetrics = surfaceMetrics,
+                    surfaceClassification = surfaceClassification,
+                    revolutionMesh = revolutionMesh,
+                    logMessage = "Procesadas exitosamente ${parsedRows.size} filas. Malla 3D generada."
                 )
             }
         }
@@ -107,6 +125,29 @@ class WallModelerViewModel : ViewModel() {
         }
         if (text.isNotEmpty()) {
             parseSyntax(text)
+        }
+    }
+
+    private fun setColorMode(mode: com.example.amigurumimaker.domain.model.ColorMode) {
+        _state.update {
+            val mesh = it.roundAnalyses.let { analyses ->
+                RevolutionMeshComputer.computeMesh(analyses, mode)
+            }
+            it.copy(
+                colorMode = mode,
+                revolutionMesh = mesh
+            )
+        }
+    }
+
+    private fun setWireframe(enabled: Boolean) {
+        _state.update { it.copy(wireframeEnabled = enabled) }
+    }
+
+    private fun loadPreset(index: Int) {
+        val presets = PresetPatterns.presets
+        if (index in presets.indices) {
+            parseSyntax(presets[index].pattern)
         }
     }
 

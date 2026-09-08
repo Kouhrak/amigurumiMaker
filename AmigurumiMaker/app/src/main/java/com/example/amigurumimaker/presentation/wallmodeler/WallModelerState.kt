@@ -17,5 +17,11 @@ data class WallModelerState(
     val logMessage: String = "Listo para procesar patrón.",
     val totalStitches: Int = 0,
     val totalIncreases: Int = 0,
-    val totalDecreases: Int = 0
+    val totalDecreases: Int = 0,
+    val roundAnalyses: List<RoundAnalysis> = emptyList(),
+    val surfaceMetrics: SurfaceMetrics? = null,
+    val surfaceClassification: SurfaceClassification = SurfaceClassification.FLAT,
+    val colorMode: ColorMode = ColorMode.GAUSS_HEATMAP,
+    val wireframeEnabled: Boolean = false,
+    val revolutionMesh: RevolutionMesh? = null
 )

@@ -17,28 +17,34 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.amigurumimaker.domain.model.ColorMode
 import com.example.amigurumimaker.domain.model.CylinderCell
 import com.example.amigurumimaker.domain.model.InfoTab
 import com.example.amigurumimaker.domain.model.MeshCell
 import com.example.amigurumimaker.domain.model.ParsedRow
+import com.example.amigurumimaker.domain.model.RevolutionMesh
+import com.example.amigurumimaker.domain.model.RoundAnalysis
+import com.example.amigurumimaker.domain.model.SurfaceClassification
+import com.example.amigurumimaker.domain.model.SurfaceMetrics
 import com.example.amigurumimaker.domain.model.ViewMode
 import com.example.amigurumimaker.presentation.wallmodeler.ui.molecules.HeaderBar
+import com.example.amigurumimaker.presentation.wallmodeler.ui.molecules.MetricsGrid
+import com.example.amigurumimaker.presentation.wallmodeler.ui.molecules.PresetsBar
 import com.example.amigurumimaker.presentation.wallmodeler.ui.molecules.StatsRow
 import com.example.amigurumimaker.presentation.wallmodeler.ui.organisms.AnalysisTable
 import com.example.amigurumimaker.presentation.wallmodeler.ui.organisms.CanvasView
+import com.example.amigurumimaker.presentation.wallmodeler.ui.organisms.GeometryViewport
 import com.example.amigurumimaker.presentation.wallmodeler.ui.organisms.PatternEditorPanel
-import com.example.amigurumimaker.presentation.wallmodeler.ui.organisms.StitchInfoPanel
 
 @Composable
 fun WallModelerTemplate(
@@ -64,10 +70,19 @@ fun WallModelerTemplate(
     totalStitches: Int,
     totalIncreases: Int,
     totalDecreases: Int,
+    roundAnalyses: List<RoundAnalysis> = emptyList(),
+    surfaceMetrics: SurfaceMetrics? = null,
+    surfaceClassification: SurfaceClassification = SurfaceClassification.FLAT,
+    colorMode: ColorMode = ColorMode.GAUSS_HEATMAP,
+    wireframeEnabled: Boolean = false,
+    revolutionMesh: RevolutionMesh? = null,
+    onColorModeChange: (ColorMode) -> Unit = {},
+    onWireframeToggle: (Boolean) -> Unit = {},
+    onPresetClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize().background(Color(0xFFF8FAFC))) {
-        HeaderBar(title = "AmiCube Visualizer")
+        HeaderBar(title = "AmiMath Engine")
 
         Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
             Column(
@@ -85,8 +100,17 @@ fun WallModelerTemplate(
                     enabled = buildEnabled,
                     logMessage = logMessage
                 )
+
+                PresetsBar(onPresetClick = onPresetClick)
+
+                MetricsGrid(
+                    surfaceMetrics = surfaceMetrics,
+                    classification = surfaceClassification
+                )
+
                 AnalysisTable(
                     rows = parsedRows,
+                    roundAnalyses = roundAnalyses,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -96,30 +120,50 @@ fun WallModelerTemplate(
                     .weight(0.65f)
                     .fillMaxSize()
             ) {
-                CanvasControlsBar(
+                ViewControlsBar(
                     viewMode = viewMode,
                     parsedRowCount = parsedRows.size,
+                    colorMode = colorMode,
+                    wireframeEnabled = wireframeEnabled,
                     onViewModeChange = onViewModeChange,
+                    onColorModeChange = onColorModeChange,
+                    onWireframeToggle = onWireframeToggle,
                     onZoomIn = { onZoom(1.2f) },
                     onZoomOut = { onZoom(1f / 1.2f) },
                     onResetView = onResetView,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                CanvasView(
-                    meshCells = meshCells,
-                    cylinderCells = cylinderCells,
-                    parsedRows = parsedRows,
-                    viewMode = viewMode,
-                    scale = scale,
-                    offsetX = offsetX,
-                    offsetY = offsetY,
-                    onDrag = onDrag,
-                    onZoom = { factor -> if (factor > 0f) onZoom(factor) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                )
+                when (viewMode) {
+                    ViewMode.REVOLUTION_3D -> {
+                        GeometryViewport(
+                            revolutionMesh = revolutionMesh,
+                            wireframeEnabled = wireframeEnabled,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                        )
+                    }
+                    else -> {
+                        CanvasView(
+                            meshCells = meshCells,
+                            cylinderCells = cylinderCells,
+                            parsedRows = parsedRows,
+                            viewMode = viewMode,
+                            scale = scale,
+                            offsetX = offsetX,
+                            offsetY = offsetY,
+                            onDrag = onDrag,
+                            onZoom = { factor -> if (factor > 0f) onZoom(factor) },
+                            roundAnalyses = roundAnalyses,
+                            colorMode = colorMode,
+                            wireframeEnabled = wireframeEnabled,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                        )
+                    }
+                }
 
                 StatsRow(
                     totalStitches = totalStitches,
@@ -133,10 +177,14 @@ fun WallModelerTemplate(
 }
 
 @Composable
-private fun CanvasControlsBar(
+private fun ViewControlsBar(
     viewMode: ViewMode,
     parsedRowCount: Int,
+    colorMode: ColorMode,
+    wireframeEnabled: Boolean,
     onViewModeChange: (ViewMode) -> Unit,
+    onColorModeChange: (ColorMode) -> Unit,
+    onWireframeToggle: (Boolean) -> Unit,
     onZoomIn: () -> Unit,
     onZoomOut: () -> Unit,
     onResetView: () -> Unit,
@@ -151,7 +199,7 @@ private fun CanvasControlsBar(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Vista de Deformación Célula/Cubo",
+                text = "Vista Geométrica 3D",
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF475569)
@@ -172,14 +220,19 @@ private fun CanvasControlsBar(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             ViewModeButton(
-                label = "Plano 2D (Trapecios)",
+                label = "2D",
                 isActive = viewMode == ViewMode.MESH_2D,
                 onClick = { onViewModeChange(ViewMode.MESH_2D) }
             )
             ViewModeButton(
-                label = "Cilindro 3D",
+                label = "3D",
                 isActive = viewMode == ViewMode.CYLINDER_3D,
                 onClick = { onViewModeChange(ViewMode.CYLINDER_3D) }
+            )
+            ViewModeButton(
+                label = "Revolución",
+                isActive = viewMode == ViewMode.REVOLUTION_3D,
+                onClick = { onViewModeChange(ViewMode.REVOLUTION_3D) }
             )
 
             Box(
@@ -188,9 +241,35 @@ private fun CanvasControlsBar(
                     .background(Color(0xFFCBD5E1))
             )
 
-            ZoomIconButton(label = "+", onClick = onZoomIn)
-            ZoomIconButton(label = "−", onClick = onZoomOut)
-            ZoomIconButton(label = "↺", onClick = onResetView)
+            if (viewMode != ViewMode.REVOLUTION_3D) {
+                ViewModeButton(
+                    label = if (colorMode == ColorMode.GAUSS_HEATMAP) "Color: K" else "Color: Grad",
+                    isActive = true,
+                    onClick = {
+                        onColorModeChange(
+                            if (colorMode == ColorMode.GAUSS_HEATMAP) ColorMode.ROW_GRADIENT
+                            else ColorMode.GAUSS_HEATMAP
+                        )
+                    }
+                )
+            }
+            ViewModeButton(
+                label = if (wireframeEnabled) "Malla: On" else "Malla: Off",
+                isActive = wireframeEnabled,
+                onClick = { onWireframeToggle(!wireframeEnabled) }
+            )
+
+            if (viewMode != ViewMode.REVOLUTION_3D) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 1.dp, height = 20.dp)
+                        .background(Color(0xFFCBD5E1))
+                )
+
+                ZoomIconButton(label = "+", onClick = onZoomIn)
+                ZoomIconButton(label = "\u2212", onClick = onZoomOut)
+                ZoomIconButton(label = "\u21BA", onClick = onResetView)
+            }
         }
     }
 }
@@ -252,8 +331,8 @@ private fun WallModelerTemplatePreview() {
         meshCells = emptyList(),
         cylinderCells = emptyList(),
         buildEnabled = true,
-        viewMode = com.example.amigurumimaker.domain.model.ViewMode.MESH_2D,
-        activeTab = com.example.amigurumimaker.domain.model.InfoTab.CATALOG,
+        viewMode = ViewMode.MESH_2D,
+        activeTab = InfoTab.CATALOG,
         onViewModeChange = {},
         onTabChange = {},
         scale = 1f,

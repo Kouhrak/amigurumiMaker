@@ -2,5 +2,6 @@ package com.example.amigurumimaker.domain.model
 
 enum class ViewMode {
     MESH_2D,
-    CYLINDER_3D
+    CYLINDER_3D,
+    REVOLUTION_3D
 }

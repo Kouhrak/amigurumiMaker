@@ -3,10 +3,13 @@ package com.example.amigurumimaker.presentation.wallmodeler.ui.organisms
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,19 +27,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.amigurumimaker.domain.model.ParsedRow
 import com.example.amigurumimaker.domain.model.ParsedToken
+import com.example.amigurumimaker.domain.model.RoundAnalysis
 import com.example.amigurumimaker.domain.model.StitchType
 import com.example.amigurumimaker.presentation.wallmodeler.ui.atoms.StatusBadge
 
 @Composable
 fun AnalysisTable(
     rows: List<ParsedRow>,
+    roundAnalyses: List<RoundAnalysis>,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier.padding(16.dp)
     ) {
         Text(
-            text = "Desglose de Filas y Verificación Matemática",
+            text = "Desglose de Filas y Análisis Geométrico",
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -63,7 +68,10 @@ fun AnalysisTable(
 
             rows.forEachIndexed { index, row ->
                 if (index > 0) HorizontalDivider(color = Color(0x1A000000))
-                TableRow(row)
+                TableRow(
+                    row = row,
+                    analysis = roundAnalyses.getOrNull(index)
+                )
             }
         }
     }
@@ -93,13 +101,17 @@ private fun AnalysisTableWithDataPreview() {
             increaseCount = 1, decreaseCount = 0
         )
     )
-    AnalysisTable(rows = mockRows)
+    val mockAnalyses = listOf(
+        RoundAnalysis(1, 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        RoundAnalysis(2, 8, 8, 1.27, 1.0, 0.0, 7.26, 0.5, 0.126, 7.98)
+    )
+    AnalysisTable(rows = mockRows, roundAnalyses = mockAnalyses)
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun AnalysisTableEmptyPreview() {
-    AnalysisTable(rows = emptyList())
+    AnalysisTable(rows = emptyList(), roundAnalyses = emptyList())
 }
 
 @Composable
@@ -113,8 +125,12 @@ private fun TableHeader() {
         HeaderCell("Instrucción", 200.dp)
         HeaderCell("Aum.", 40.dp, TextAlign.Center)
         HeaderCell("Dis.", 40.dp, TextAlign.Center)
-        HeaderCell("Calc.", 48.dp, TextAlign.End)
-        HeaderCell("Esperado", 64.dp, TextAlign.End)
+        HeaderCell("Nᵢ", 40.dp, TextAlign.End)
+        HeaderCell("ΔN", 40.dp, TextAlign.End)
+        HeaderCell("rᵢ", 48.dp, TextAlign.End)
+        HeaderCell("θᵢ", 48.dp, TextAlign.End)
+        HeaderCell("Kᵢ", 56.dp, TextAlign.End)
+        HeaderCell("Aᵢ", 56.dp, TextAlign.End)
         HeaderCell("Estado", 56.dp, TextAlign.Center)
     }
 }
@@ -136,7 +152,10 @@ private fun HeaderCell(
 }
 
 @Composable
-private fun TableRow(row: ParsedRow) {
+private fun TableRow(
+    row: ParsedRow,
+    analysis: RoundAnalysis?
+) {
     Row(
         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -178,16 +197,65 @@ private fun TableRow(row: ParsedRow) {
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.End,
-            modifier = Modifier.width(48.dp)
+            modifier = Modifier.width(40.dp)
         )
+
+        val deltaNText = if (analysis != null && analysis.deltaN != 0) {
+            if (analysis.deltaN > 0) "+${analysis.deltaN}" else analysis.deltaN.toString()
+        } else "-"
         Text(
-            text = if (row.totalExpected != null) "${row.totalExpected}p" else "N/A",
+            text = deltaNText,
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = when {
+                analysis == null || analysis.deltaN == 0 -> MaterialTheme.colorScheme.onSurfaceVariant
+                analysis.deltaN > 0 -> Color(0xFF4ADE80)
+                else -> Color(0xFFF87171)
+            },
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(40.dp)
+        )
+
+        Text(
+            text = analysis?.let { "%.2f".format(it.theoreticalRadius) } ?: "-",
             style = MaterialTheme.typography.bodySmall,
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.End,
-            modifier = Modifier.width(64.dp)
+            modifier = Modifier.width(48.dp)
         )
+
+        Text(
+            text = analysis?.let { "%.1f°".format(it.inclinationAngleDeg) } ?: "-",
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(48.dp)
+        )
+
+        val kValue = analysis?.localCurvature ?: 0.0
+        val kColor = if (kValue > 1e-8) Color(0xFF10B981)
+        else if (kValue < -1e-8) Color(0xFFEC4899)
+        else MaterialTheme.colorScheme.onSurfaceVariant
+        Text(
+            text = analysis?.let { "%.4f".format(it.localCurvature) } ?: "-",
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = kColor,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(56.dp)
+        )
+
+        Text(
+            text = analysis?.let { "%.2f".format(it.roundArea) } ?: "-",
+            style = MaterialTheme.typography.bodySmall,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(56.dp)
+        )
+
         StatusBadge(
             isValid = row.isValid,
             errorMsg = row.errorMsg,

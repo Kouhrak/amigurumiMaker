@@ -1,5 +1,7 @@
 package com.example.amigurumimaker.presentation.wallmodeler
 
+import com.example.amigurumimaker.domain.model.ColorMode
+import com.example.amigurumimaker.domain.model.SurfaceClassification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -112,5 +114,54 @@ class WallModelerViewModelTest {
         assertEquals(1f, viewModel.state.value.scale)
         assertEquals(0f, viewModel.state.value.offsetX)
         assertEquals(0f, viewModel.state.value.offsetY)
+    }
+
+    @Test
+    fun `parseSyntax computes round analyses and surface metrics`() = runTest(testDispatcher) {
+        viewModel.process(WallModelerIntent.ParseSyntax("1) 6c (6p)\n2) [1a] 6v (12p)"))
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(2, state.parsedRows.size)
+        assertEquals(2, state.roundAnalyses.size)
+        assertNotNull(state.surfaceMetrics)
+        assertEquals(12, state.roundAnalyses[1].stitchCount)
+        assertEquals(11, state.roundAnalyses[1].deltaN)
+        assertTrue(state.roundAnalyses[1].theoreticalRadius > 0)
+        assertTrue(state.roundAnalyses[1].localCurvature > 0)
+    }
+
+    @Test
+    fun `setColorMode updates state`() = runTest(testDispatcher) {
+        assertEquals(ColorMode.GAUSS_HEATMAP, viewModel.state.value.colorMode)
+
+        viewModel.process(WallModelerIntent.SetColorMode(ColorMode.ROW_GRADIENT))
+        assertEquals(ColorMode.ROW_GRADIENT, viewModel.state.value.colorMode)
+
+        viewModel.process(WallModelerIntent.SetColorMode(ColorMode.GAUSS_HEATMAP))
+        assertEquals(ColorMode.GAUSS_HEATMAP, viewModel.state.value.colorMode)
+    }
+
+    @Test
+    fun `setWireframe toggles wireframe state`() = runTest(testDispatcher) {
+        assertEquals(false, viewModel.state.value.wireframeEnabled)
+
+        viewModel.process(WallModelerIntent.SetWireframe(true))
+        assertEquals(true, viewModel.state.value.wireframeEnabled)
+
+        viewModel.process(WallModelerIntent.SetWireframe(false))
+        assertEquals(false, viewModel.state.value.wireframeEnabled)
+    }
+
+    @Test
+    fun `loadPreset loads pattern and computes metrics`() = runTest(testDispatcher) {
+        viewModel.process(WallModelerIntent.LoadPreset(0))
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state.parsedRows.isNotEmpty(), "Expected preset to produce parsed rows")
+        assertTrue(state.roundAnalyses.isNotEmpty(), "Expected round analyses")
+        assertNotNull(state.surfaceMetrics, "Expected surface metrics")
+        assertEquals(SurfaceClassification.SPHERE, state.surfaceClassification)
     }
 }

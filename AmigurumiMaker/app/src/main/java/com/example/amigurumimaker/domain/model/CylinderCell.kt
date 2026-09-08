@@ -6,5 +6,6 @@ data class CylinderCell(
     val x3: Float, val y3: Float,
     val x4: Float, val y4: Float,
     val type: StitchType,
-    val depth: Float
+    val depth: Float,
+    val rowIndex: Int = 0
 )

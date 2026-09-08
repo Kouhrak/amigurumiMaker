@@ -1,9 +1,49 @@
-# AmigurumiMaker — Root
+# ============================================
+# AmigurumiMaker — Root .gitignore
 # Kotlin project: AmigurumiMaker/
 # React Native project: amigurumiMakerType/
+# ============================================
 
-# Dependencies (both projects)
-node_modules/
+# ---- IDE (both projects) ----
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
 
-# Logs
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Logs ----
 *.log
+
+# ---- Kotlin/Android (AmigurumiMaker/) ----
+AmigurumiMaker/.gradle/
+AmigurumiMaker/build/
+AmigurumiMaker/local.properties
+AmigurumiMaker/captures/
+AmigurumiMaker/.externalNativeBuild/
+AmigurumiMaker/.cxx/
+AmigurumiMaker/*.aab
+AmigurumiMaker/*.apk
+AmigurumiMaker/output-metadata.json
+AmigurumiMaker/*.jks
+AmigurumiMaker/*.keystore
+AmigurumiMaker/google-services.json
+AmigurumiMaker/*.hprof
+
+# ---- React Native/Expo (amigurumiMakerType/) ----
+amigurumiMakerType/node_modules/
+amigurumiMakerType/.expo/
+amigurumiMakerType/dist/
+amigurumiMakerType/web-build/
+amigurumiMakerType/expo-env.d.ts
+amigurumiMakerType/.metro-health-check*
+amigurumiMakerType/coverage/
+amigurumiMakerType/.env
+amigurumiMakerType/.env.local
+amigurumiMakerType/.env.*.local
+amigurumiMakerType/*.aab
+amigurumiMakerType/*.apk
+amigurumiMakerType/build/

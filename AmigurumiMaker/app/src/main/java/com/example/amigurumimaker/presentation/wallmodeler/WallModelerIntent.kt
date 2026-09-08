@@ -1,5 +1,6 @@
 package com.example.amigurumimaker.presentation.wallmodeler
 
+import com.example.amigurumimaker.domain.model.ColorMode
 import com.example.amigurumimaker.domain.model.InfoTab
 import com.example.amigurumimaker.domain.model.ViewMode
 
@@ -12,4 +13,7 @@ sealed interface WallModelerIntent {
     data class SetActiveTab(val tab: InfoTab) : WallModelerIntent
     data class LoadExample(val index: Int) : WallModelerIntent
     data class DragBy(val dx: Float, val dy: Float) : WallModelerIntent
+    data class SetColorMode(val mode: ColorMode) : WallModelerIntent
+    data class SetWireframe(val enabled: Boolean) : WallModelerIntent
+    data class LoadPreset(val index: Int) : WallModelerIntent
 }

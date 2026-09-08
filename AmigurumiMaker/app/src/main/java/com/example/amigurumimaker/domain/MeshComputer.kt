@@ -105,7 +105,8 @@ object MeshComputer {
                         x3 = x2, y3 = y - rowHeight - z2 * 0.2f,
                         x4 = x1, y4 = y - rowHeight - z1 * 0.2f,
                         type = if (i < blocks.size) blocks[i] else StitchType.NORMAL,
-                        depth = depth
+                        depth = depth,
+                        rowIndex = row.rowIndex
                     )
                 )
             }
