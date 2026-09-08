@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Amigurumi Maker",
+    "slug": "amigurumi-maker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "amigurumi-maker",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["android", "ios", "web"],
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "android": {
+      "package": "com.example.amigurumimaker",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.example.amigurumimaker"
+    },
+    "plugins": ["expo-router"]
+  }
+}
